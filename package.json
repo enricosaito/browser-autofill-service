@@ -1,0 +1,38 @@
+{
+  "name": "browser-autofill-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/api/server.js",
+  "scripts": {
+    "start": "node src/api/server.js",
+    "worker": "node src/workers/worker.js",
+    "dev:api": "NODE_ENV=development node src/api/server.js",
+    "dev:worker": "NODE_ENV=development node src/workers/worker.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop ecosystem.config.js",
+    "pm2:restart": "pm2 restart ecosystem.config.js",
+    "pm2:logs": "pm2 logs",
+    "pm2:monit": "pm2 monit",
+    "test": "node test-integration.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enricosaito/browser-autofill-service.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/enricosaito/browser-autofill-service/issues"
+  },
+  "homepage": "https://github.com/enricosaito/browser-autofill-service#readme",
+  "dependencies": {
+    "bullmq": "^5.63.2",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "ioredis": "^5.8.2",
+    "playwright": "^1.56.1",
+    "winston": "^3.18.3"
+  }
+}
