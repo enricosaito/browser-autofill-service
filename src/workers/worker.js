@@ -72,6 +72,7 @@ class FormFillingWorker {
     const { accountId, formData, targetUrl, submitSelector, successIndicators, options } = job.data;
     
     logger.info(`Processing job ${job.id} for account ${accountId}`);
+    logger.info(`Session ID: ${accountId} (used for proxy sticky session)`);
     
     let browser, context, page;
     const startTime = Date.now();
@@ -80,9 +81,13 @@ class FormFillingWorker {
       // Update progress
       await job.updateProgress(10);
       
-      // Launch browser
+      // Launch browser with options (userAgent from frontend if provided)
       logger.info(`Launching browser for ${accountId}`);
-      ({ browser, context, page } = await browserManager.launchBrowser(accountId, options.browserOptions || {}));
+      const browserOptions = {
+        userAgent: options.userAgent || undefined,
+        ...(options.browserOptions || {}),
+      };
+      ({ browser, context, page } = await browserManager.launchBrowser(accountId, browserOptions));
       
       await job.updateProgress(20);
       
@@ -165,6 +170,12 @@ class FormFillingWorker {
       
       await job.updateProgress(100);
       
+      // Auto-delete profile after completion (cleanup for fresh start next time)
+      logger.info(`Auto-deleting profile for ${accountId}`);
+      const profileManager = require('../utils/profiles');
+      profileManager.deleteProfile(accountId);
+      logger.info(`Profile deleted for ${accountId}`);
+      
       return result;
       
     } catch (error) {
@@ -185,6 +196,17 @@ class FormFillingWorker {
       // Always close browser
       if (accountId) {
         await browserManager.closeBrowser(accountId);
+      }
+      
+      // Delete profile even on failure (fresh start for retry)
+      if (accountId) {
+        try {
+          const profileManager = require('../utils/profiles');
+          profileManager.deleteProfile(accountId);
+          logger.info(`Profile cleaned up for ${accountId}`);
+        } catch (cleanupError) {
+          logger.warn(`Failed to cleanup profile for ${accountId}:`, cleanupError);
+        }
       }
       
       logger.info(`Cleaned up browser for ${accountId}`);

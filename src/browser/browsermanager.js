@@ -20,7 +20,7 @@ class BrowserManager {
   
   /**
    * Launch a new browser instance with stealth settings
-   * @param {string} accountId - Unique account identifier
+   * @param {string} accountId - Unique account identifier (used as sessionId for sticky proxy)
    * @param {Object} options - Additional options
    * @returns {Promise<{browser: Browser, context: BrowserContext, page: Page}>}
    */
@@ -31,11 +31,25 @@ class BrowserManager {
       // Get profile path for isolation
       const userDataDir = profileManager.getProfilePath(accountId);
       
-      // Generate realistic browser fingerprint
-      const viewport = generateViewport();
-      const userAgent = generateUserAgent();
-      const timezone = generateTimezone();
-      const locale = generateLocale();
+      // Use provided user agent or generate one
+      const userAgent = options.userAgent || generateUserAgent();
+      const viewport = options.viewport || generateViewport();
+      const timezone = options.timezone || generateTimezone();
+      const locale = options.locale || generateLocale();
+      
+      // Build proxy configuration with Decodo sticky session
+      let proxyServer = null;
+      let proxyUsername = null;
+      let proxyPassword = null;
+      
+      if (config.proxy.enabled) {
+        // Decodo format: username-session-{sessionId}:password@server
+        proxyServer = `http://${config.proxy.decodServer}`;
+        proxyUsername = `${config.proxy.username}-session-${accountId}`;
+        proxyPassword = config.proxy.password;
+        
+        logger.info(`Using Decodo proxy with sticky session: ${accountId}`);
+      }
       
       // Browser launch args
       const args = [
@@ -44,8 +58,8 @@ class BrowserManager {
       ];
       
       // Add proxy if configured
-      if (config.proxy.enabled && config.proxy.server) {
-        args.push(`--proxy-server=${config.proxy.server}`);
+      if (proxyServer) {
+        args.push(`--proxy-server=${proxyServer}`);
       }
       
       // Launch browser
@@ -63,11 +77,11 @@ class BrowserManager {
         locale,
         timezoneId: timezone,
         
-        // Proxy authentication if needed
-        ...(config.proxy.enabled && config.proxy.username && {
+        // Proxy authentication (Decodo with sticky session)
+        ...(proxyUsername && proxyPassword && {
           httpCredentials: {
-            username: config.proxy.username,
-            password: config.proxy.password,
+            username: proxyUsername,
+            password: proxyPassword,
           },
         }),
         

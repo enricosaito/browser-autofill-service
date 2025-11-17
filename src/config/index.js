@@ -31,9 +31,10 @@ module.exports = {
   
   proxy: {
     enabled: process.env.USE_PROXY === 'true',
-    server: process.env.PROXY_SERVER || '',
-    username: process.env.PROXY_USERNAME || undefined,
-    password: process.env.PROXY_PASSWORD || undefined,
+    // Decodo configuration
+    decodServer: process.env.DECODO_SERVER || 'gate.decodo.com:8080',
+    username: process.env.DECODO_USERNAME || '',
+    password: process.env.DECODO_PASSWORD || '',
   },
   
   form: {

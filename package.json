@@ -13,7 +13,7 @@
     "pm2:restart": "pm2 restart ecosystem.config.js",
     "pm2:logs": "pm2 logs",
     "pm2:monit": "pm2 monit",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test-integration.js"
   },
   "repository": {
     "type": "git",
