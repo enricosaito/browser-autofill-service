@@ -60,24 +60,32 @@ class QueueManager {
         throw new Error('formData must be an object');
       }
       
+      // Generate unique session ID for complete isolation
+      // This ensures each checkout has its own proxy session, cookies, and browser fingerprint
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 11);
+      const sessionId = `${accountId}-${timestamp}-${randomId}`;
+      const jobId = `${accountId}-${timestamp}`;
+      
       const job = await this.formQueue.add(
         'fill-form',
         {
           accountId,
+          sessionId, // Unique session ID for proxy + profile isolation
           formData,
           targetUrl: targetUrl || config.form.targetUrl,
           submitSelector: submitSelector || config.form.submitSelector,
           successIndicators: successIndicators || {},
           options,
-          timestamp: Date.now(),
+          timestamp,
         },
         {
           priority,
-          jobId: `${accountId}-${Date.now()}`, // Unique job ID
+          jobId,
         }
       );
       
-      logger.info(`Task added to queue: ${job.id} for account: ${accountId}`);
+      logger.info(`Task added to queue: ${job.id} | Session: ${sessionId}`);
       
       return job;
     } catch (error) {

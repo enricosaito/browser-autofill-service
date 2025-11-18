@@ -1,4 +1,6 @@
 const { chromium } = require('playwright');
+const path = require('path');
+const fs = require('fs');
 const config = require('../config');
 const logger = require('../utils/logger');
 const profileManager = require('../utils/profiles');
@@ -148,7 +150,7 @@ class BrowserManager {
       const originalQuery = window.navigator.permissions.query;
       window.navigator.permissions.query = (parameters) => (
         parameters.name === 'notifications' ?
-          Promise.resolve({ state: Cypress.denied }) :
+          Promise.resolve({ state: 'denied' }) :
           originalQuery(parameters)
       );
       
@@ -295,10 +297,6 @@ class BrowserManager {
     logger.info('All browsers closed');
   }
 }
-
-// Fix missing imports
-const path = require('path');
-const fs = require('fs');
 
 module.exports = new BrowserManager();
 

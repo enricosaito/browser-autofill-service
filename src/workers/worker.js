@@ -69,10 +69,10 @@ class FormFillingWorker {
    * @returns {Promise<Object>}
    */
   async processJob(job) {
-    const { accountId, formData, targetUrl, submitSelector, successIndicators, options } = job.data;
+    const { accountId, sessionId, formData, targetUrl, submitSelector, successIndicators, options } = job.data;
     
     logger.info(`Processing job ${job.id} for account ${accountId}`);
-    logger.info(`Session ID: ${accountId} (used for proxy sticky session)`);
+    logger.info(`Unique Session ID: ${sessionId} (proxy + profile isolation)`);
     
     let browser, context, page;
     const startTime = Date.now();
@@ -81,13 +81,14 @@ class FormFillingWorker {
       // Update progress
       await job.updateProgress(10);
       
-      // Launch browser with options (userAgent from frontend if provided)
-      logger.info(`Launching browser for ${accountId}`);
+      // Launch browser with UNIQUE SESSION ID for complete isolation
+      // Each checkout gets its own proxy session, cookies, and fingerprint
+      logger.info(`Launching isolated browser for session ${sessionId}`);
       const browserOptions = {
         userAgent: options.userAgent || undefined,
         ...(options.browserOptions || {}),
       };
-      ({ browser, context, page } = await browserManager.launchBrowser(accountId, browserOptions));
+      ({ browser, context, page } = await browserManager.launchBrowser(sessionId, browserOptions));
       
       await job.updateProgress(20);
       
@@ -105,16 +106,16 @@ class FormFillingWorker {
       
       // Take initial screenshot
       if (options.takeScreenshots) {
-        await browserManager.takeScreenshot(page, accountId, 'initial');
+        await browserManager.takeScreenshot(page, sessionId, 'initial');
       }
       
       // Check for CAPTCHA
       const hasCaptcha = await formLogic.detectCaptcha(page);
       if (hasCaptcha) {
-        logger.warn(`CAPTCHA detected for ${accountId}`);
+        logger.warn(`CAPTCHA detected for session ${sessionId}`);
         
         if (options.takeScreenshots) {
-          await browserManager.takeScreenshot(page, accountId, 'captcha');
+          await browserManager.takeScreenshot(page, sessionId, 'captcha');
         }
         
         throw new Error('CAPTCHA detected - manual intervention required');
@@ -123,7 +124,7 @@ class FormFillingWorker {
       await job.updateProgress(40);
       
       // Fill form
-      logger.info(`Filling form for ${accountId}`);
+      logger.info(`Filling form for session ${sessionId}`);
       const fillResults = await formLogic.fillForm(page, formData, {
         simulateHuman: options.simulateHuman !== false,
       });
@@ -132,11 +133,11 @@ class FormFillingWorker {
       
       // Take screenshot before submit
       if (options.takeScreenshots) {
-        await browserManager.takeScreenshot(page, accountId, 'before-submit');
+        await browserManager.takeScreenshot(page, sessionId, 'before-submit');
       }
       
       // Submit form
-      logger.info(`Submitting form for ${accountId}`);
+      logger.info(`Submitting form for session ${sessionId}`);
       await formLogic.submitForm(page, submitSelector);
       
       await job.updateProgress(85);
@@ -145,14 +146,14 @@ class FormFillingWorker {
       await sleep(3000);
       
       // Verify submission
-      logger.info(`Verifying submission for ${accountId}`);
+      logger.info(`Verifying submission for session ${sessionId}`);
       const verification = await formLogic.verifySubmission(page, successIndicators);
       
       await job.updateProgress(95);
       
       // Take final screenshot
       if (options.takeScreenshots) {
-        await browserManager.takeScreenshot(page, accountId, 'after-submit');
+        await browserManager.takeScreenshot(page, sessionId, 'after-submit');
       }
       
       const duration = Date.now() - startTime;
@@ -160,31 +161,32 @@ class FormFillingWorker {
       const result = {
         success: verification.success,
         accountId,
+        sessionId,
         fillResults,
         verification,
         duration,
         timestamp: new Date().toISOString(),
       };
       
-      logger.info(`Job ${job.id} completed for ${accountId}`, { success: verification.success, duration });
+      logger.info(`Job ${job.id} completed for session ${sessionId}`, { success: verification.success, duration });
       
       await job.updateProgress(100);
       
-      // Auto-delete profile after completion (cleanup for fresh start next time)
-      logger.info(`Auto-deleting profile for ${accountId}`);
+      // Auto-delete session profile after completion (cleanup for fresh start)
+      logger.info(`Auto-deleting session profile for ${sessionId}`);
       const profileManager = require('../utils/profiles');
-      profileManager.deleteProfile(accountId);
-      logger.info(`Profile deleted for ${accountId}`);
+      profileManager.deleteProfile(sessionId);
+      logger.info(`Session profile deleted for ${sessionId}`);
       
       return result;
       
     } catch (error) {
-      logger.error(`Job ${job.id} failed for ${accountId}:`, error);
+      logger.error(`Job ${job.id} failed for session ${sessionId}:`, error);
       
       // Take error screenshot
       if (page) {
         try {
-          await browserManager.takeScreenshot(page, accountId, 'error');
+          await browserManager.takeScreenshot(page, sessionId, 'error');
         } catch (screenshotError) {
           logger.error('Failed to take error screenshot:', screenshotError);
         }
@@ -193,23 +195,23 @@ class FormFillingWorker {
       throw error;
       
     } finally {
-      // Always close browser
-      if (accountId) {
-        await browserManager.closeBrowser(accountId);
+      // Always close browser using sessionId
+      if (sessionId) {
+        await browserManager.closeBrowser(sessionId);
       }
       
-      // Delete profile even on failure (fresh start for retry)
-      if (accountId) {
+      // Delete session profile even on failure (fresh start for retry)
+      if (sessionId) {
         try {
           const profileManager = require('../utils/profiles');
-          profileManager.deleteProfile(accountId);
-          logger.info(`Profile cleaned up for ${accountId}`);
+          profileManager.deleteProfile(sessionId);
+          logger.info(`Session profile cleaned up for ${sessionId}`);
         } catch (cleanupError) {
-          logger.warn(`Failed to cleanup profile for ${accountId}:`, cleanupError);
+          logger.warn(`Failed to cleanup profile for ${sessionId}:`, cleanupError);
         }
       }
       
-      logger.info(`Cleaned up browser for ${accountId}`);
+      logger.info(`Cleaned up browser for session ${sessionId}`);
     }
   }
   

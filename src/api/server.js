@@ -10,6 +10,32 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// CORS configuration for frontend (Vercel)
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173', // Vite dev
+    'http://localhost:3001',
+    process.env.FRONTEND_URL || ''
+  ].filter(Boolean);
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin) || allowedOrigins.includes('')) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
 // Request logging middleware
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path}`, {
@@ -18,6 +44,48 @@ app.use((req, res, next) => {
   });
   next();
 });
+
+// API Key authentication middleware
+const authenticateAPIKey = (req, res, next) => {
+  // Skip auth for health check
+  if (req.path === '/health') {
+    return next();
+  }
+  
+  const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
+  
+  if (!apiKey) {
+    logger.warn('API request without API key', { ip: req.ip, path: req.path });
+    return res.status(401).json({
+      success: false,
+      error: 'API key required',
+    });
+  }
+  
+  // Check against environment variable
+  const validApiKey = process.env.API_KEY;
+  
+  if (!validApiKey) {
+    logger.error('API_KEY not configured in environment');
+    return res.status(500).json({
+      success: false,
+      error: 'Server configuration error',
+    });
+  }
+  
+  if (apiKey !== validApiKey) {
+    logger.warn('Invalid API key attempt', { ip: req.ip, path: req.path });
+    return res.status(403).json({
+      success: false,
+      error: 'Invalid API key',
+    });
+  }
+  
+  next();
+};
+
+// Apply authentication to all API routes
+app.use('/api', authenticateAPIKey);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
