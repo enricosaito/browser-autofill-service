@@ -3,6 +3,7 @@ const config = require('../config');
 const logger = require('../utils/logger');
 const browserManager = require('../browser/browsermanager');
 const formLogic = require('../browser/formlogic');
+const cartpandaCheckout = require('../browser/cartpandaCheckout');
 const { sleep } = require('../utils/humanBehavior');
 
 /**
@@ -109,45 +110,89 @@ class FormFillingWorker {
         await browserManager.takeScreenshot(page, sessionId, 'initial');
       }
       
-      // Check for CAPTCHA
-      const hasCaptcha = await formLogic.detectCaptcha(page);
-      if (hasCaptcha) {
-        logger.warn(`CAPTCHA detected for session ${sessionId}`);
+      // Detect if this is a CartPanda checkout page
+      const isCartPanda = targetUrl.includes('cartpanda') || 
+                         await page.$('#cardNumbercartpanda_stripe').then(() => true).catch(() => false);
+      
+      let fillResults, verification;
+      
+      if (isCartPanda) {
+        logger.info('🛒 CartPanda checkout detected - using specialized handler');
         
-        if (options.takeScreenshots) {
-          await browserManager.takeScreenshot(page, sessionId, 'captcha');
+        // Check for blocking
+        const isBlocked = await cartpandaCheckout.checkIfBlocked(page);
+        if (isBlocked) {
+          if (options.takeScreenshots) {
+            await browserManager.takeScreenshot(page, sessionId, 'blocked');
+          }
+          throw new Error('Page is blocked - possible CAPTCHA or IP ban');
         }
         
-        throw new Error('CAPTCHA detected - manual intervention required');
+        await job.updateProgress(40);
+        
+        // Fill CartPanda form
+        logger.info(`Filling CartPanda checkout for session ${sessionId}`);
+        fillResults = await cartpandaCheckout.fillCheckoutForm(page, formData);
+        
+        await job.updateProgress(70);
+        
+        // Take screenshot before submit
+        if (options.takeScreenshots) {
+          await browserManager.takeScreenshot(page, sessionId, 'before-submit');
+        }
+        
+        // Submit CartPanda checkout
+        await cartpandaCheckout.submitCheckout(page);
+        
+        await job.updateProgress(85);
+        
+        // Verify CartPanda checkout (waits up to 90 seconds)
+        logger.info(`Verifying CartPanda checkout for session ${sessionId}`);
+        verification = await cartpandaCheckout.verifyCheckoutSuccess(page);
+        
+      } else {
+        logger.info('📝 Generic form detected - using standard handler');
+        
+        // Check for CAPTCHA
+        const hasCaptcha = await formLogic.detectCaptcha(page);
+        if (hasCaptcha) {
+          logger.warn(`CAPTCHA detected for session ${sessionId}`);
+          
+          if (options.takeScreenshots) {
+            await browserManager.takeScreenshot(page, sessionId, 'captcha');
+          }
+          
+          throw new Error('CAPTCHA detected - manual intervention required');
+        }
+        
+        await job.updateProgress(40);
+        
+        // Fill form (generic)
+        logger.info(`Filling form for session ${sessionId}`);
+        fillResults = await formLogic.fillForm(page, formData, {
+          simulateHuman: options.simulateHuman !== false,
+        });
+        
+        await job.updateProgress(70);
+        
+        // Take screenshot before submit
+        if (options.takeScreenshots) {
+          await browserManager.takeScreenshot(page, sessionId, 'before-submit');
+        }
+        
+        // Submit form
+        logger.info(`Submitting form for session ${sessionId}`);
+        await formLogic.submitForm(page, submitSelector);
+        
+        await job.updateProgress(85);
+        
+        // Wait for submission to process
+        await sleep(3000);
+        
+        // Verify submission
+        logger.info(`Verifying submission for session ${sessionId}`);
+        verification = await formLogic.verifySubmission(page, successIndicators);
       }
-      
-      await job.updateProgress(40);
-      
-      // Fill form
-      logger.info(`Filling form for session ${sessionId}`);
-      const fillResults = await formLogic.fillForm(page, formData, {
-        simulateHuman: options.simulateHuman !== false,
-      });
-      
-      await job.updateProgress(70);
-      
-      // Take screenshot before submit
-      if (options.takeScreenshots) {
-        await browserManager.takeScreenshot(page, sessionId, 'before-submit');
-      }
-      
-      // Submit form
-      logger.info(`Submitting form for session ${sessionId}`);
-      await formLogic.submitForm(page, submitSelector);
-      
-      await job.updateProgress(85);
-      
-      // Wait for submission to process
-      await sleep(3000);
-      
-      // Verify submission
-      logger.info(`Verifying submission for session ${sessionId}`);
-      const verification = await formLogic.verifySubmission(page, successIndicators);
       
       await job.updateProgress(95);
       

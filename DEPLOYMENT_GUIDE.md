@@ -46,7 +46,7 @@ BROWSER_TIMEOUT=60000
 
 # Decodo Proxy (CRITICAL!)
 USE_PROXY=true
-DECODO_SERVER=gate.decodo.com:8080
+DECODO_SERVER=gate.decodo.com:7000
 DECODO_USERNAME=
 DECODO_PASSWORD=
 
@@ -127,14 +127,20 @@ NEXT_PUBLIC_API_URL=http://your-vps-ip:3000
 NEXT_PUBLIC_API_KEY=your-api-key
 ```
 
-### Usage:
+### Usage Example (CartPanda):
 
 ```javascript
 const { data } = await submitCheckout({
-  firstName: 'John',
-  lastName: 'Doe',
+  // Basic info
   email: 'john@example.com',
-  // ... more fields
+  fullName: 'John Doe',  // or "nome" for Portuguese
+  phone: '5511999999999',  // or "telefone"
+  
+  // Payment info (CartPanda Stripe)
+  cardNumber: '4111111111111111',  // or "cartao"
+  cardExpiry: '12/25',  // MM/YY format, or "validade"
+  cvc: '123',  // or "cvv"
+  cardholderName: 'John Doe',  // optional, uses fullName if not provided
 });
 
 const jobId = data.jobId;
@@ -142,9 +148,14 @@ const jobId = data.jobId;
 // Poll for status
 const interval = setInterval(async () => {
   const status = await checkStatus(jobId);
+  
   if (status.data.status === 'completed') {
     clearInterval(interval);
     console.log('Success!', status.data.result);
+    console.log('Order:', status.data.result.orderNumber);
+  } else if (status.data.status === 'failed') {
+    clearInterval(interval);
+    console.error('Failed:', status.data.error);
   }
 }, 5000);
 ```
@@ -215,7 +226,14 @@ POST /api/tasks/submit
 Headers: X-API-Key: your-key
 Body: {
   "accountId": "unique-id",
-  "formData": { ... }
+  "formData": {
+    "email": "john@example.com",
+    "fullName": "John Doe",
+    "phone": "5511999999999",
+    "cardNumber": "4111111111111111",
+    "cardExpiry": "12/25",
+    "cvc": "123"
+  }
 }
 ```
 

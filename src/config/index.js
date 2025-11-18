@@ -31,8 +31,8 @@ module.exports = {
   
   proxy: {
     enabled: process.env.USE_PROXY === 'true',
-    // Decodo configuration
-    decodServer: process.env.DECODO_SERVER || 'gate.decodo.com:8080',
+    // Decodo configuration (port 7000 for residential proxies)
+    decodServer: process.env.DECODO_SERVER || 'gate.decodo.com:7000',
     username: process.env.DECODO_USERNAME || '',
     password: process.env.DECODO_PASSWORD || '',
   },
