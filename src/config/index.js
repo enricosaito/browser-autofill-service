@@ -35,6 +35,10 @@ module.exports = {
     decodServer: process.env.DECODO_SERVER || 'gate.decodo.com:7000',
     username: process.env.DECODO_USERNAME || '',
     password: process.env.DECODO_PASSWORD || '',
+    // Location targeting (important for geo-restricted sites like CartPanda)
+    country: process.env.DECODO_COUNTRY || 'us',
+    state: process.env.DECODO_STATE || '', // Optional: california, newyork, texas, etc.
+    city: process.env.DECODO_CITY || '', // Optional: losangeles, miami, etc.
   },
   
   form: {

@@ -45,12 +45,31 @@ class BrowserManager {
       let proxyPassword = null;
       
       if (config.proxy.enabled) {
-        // Decodo format: username-session-{sessionId}:password@server
+        // Build Decodo proxy username with location targeting and sticky session
+        // Format: username-country-{country}-state-{state}-city-{city}-session-{sessionId}
+        let locationPart = '';
+        
+        if (config.proxy.country) {
+          locationPart += `-country-${config.proxy.country}`;
+        }
+        
+        if (config.proxy.state) {
+          locationPart += `-state-${config.proxy.state}`;
+        }
+        
+        if (config.proxy.city) {
+          locationPart += `-city-${config.proxy.city}`;
+        }
+        
         proxyServer = `http://${config.proxy.decodServer}`;
-        proxyUsername = `${config.proxy.username}-session-${accountId}`;
+        proxyUsername = `${config.proxy.username}${locationPart}-session-${accountId}`;
         proxyPassword = config.proxy.password;
         
-        logger.info(`Using Decodo proxy with sticky session: ${accountId}`);
+        const location = config.proxy.state 
+          ? `${config.proxy.country.toUpperCase()}/${config.proxy.state}` 
+          : config.proxy.country.toUpperCase();
+        
+        logger.info(`Using Decodo proxy: ${location} - Session: ${accountId}`);
       }
       
       // Browser launch args

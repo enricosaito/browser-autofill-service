@@ -50,6 +50,11 @@ DECODO_SERVER=gate.decodo.com:7000
 DECODO_USERNAME=
 DECODO_PASSWORD=
 
+# Decodo Location (IMPORTANT for CartPanda - requires US IPs!)
+DECODO_COUNTRY=us
+DECODO_STATE=       # Optional: california, newyork, florida, texas, etc.
+DECODO_CITY=        # Optional: losangeles, miami, chicago, etc.
+
 # CartPanda
 TARGET_URL=https://checkout.cartpanda.com/your-url
 
