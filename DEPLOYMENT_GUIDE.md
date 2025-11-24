@@ -44,16 +44,26 @@ FRONTEND_URL=https://your-app.vercel.app
 HEADLESS=true
 BROWSER_TIMEOUT=60000
 
-# Decodo Proxy (CRITICAL!)
+# Decodo Proxy (CRITICAL for CartPanda - requires US IPs!)
 USE_PROXY=true
-DECODO_SERVER=gate.decodo.com:7000
-DECODO_USERNAME=
-DECODO_PASSWORD=
 
-# Decodo Location (IMPORTANT for CartPanda - requires US IPs!)
-DECODO_COUNTRY=us
-DECODO_STATE=       # Optional: california, newyork, florida, texas, etc.
-DECODO_CITY=        # Optional: losangeles, miami, chicago, etc.
+# OPTION 1: Subdomain-based routing (RECOMMENDED for Decodo)
+# Use country-specific subdomain: us.decodo.com, br.decodo.com, uk.decodo.com, etc.
+DECODO_SERVER=us.decodo.com:10001
+DECODO_USERNAME=your_username
+DECODO_PASSWORD=your_password
+# Leave these EMPTY when using subdomain routing:
+DECODO_COUNTRY=
+DECODO_STATE=
+DECODO_CITY=
+
+# OPTION 2: Username-suffix format (if your provider uses gate.decodo.com:7000)
+# DECODO_SERVER=gate.decodo.com:7000
+# DECODO_USERNAME=your_username
+# DECODO_PASSWORD=your_password
+# DECODO_COUNTRY=us
+# DECODO_STATE=texas
+# DECODO_CITY=dallas
 
 # CartPanda
 TARGET_URL=https://checkout.cartpanda.com/your-url

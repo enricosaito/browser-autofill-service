@@ -4,46 +4,54 @@ CartPanda requires US IP addresses. Here's how to configure Decodo for US locati
 
 ---
 
-## 🔧 Quick Setup
+## 🔧 Quick Setup (Subdomain Routing - RECOMMENDED)
 
-### **Step 1: Edit your .env on VPS**
+### **Step 1: Test Your Proxy Credentials**
+
+First, verify your Decodo credentials work:
+
+```bash
+curl -U "your_username:your_password" \
+  -x "us.decodo.com:10001" \
+  "https://ip.decodo.com/json"
+```
+
+**Expected output:** Should show `"country": { "code": "US" }`
+
+### **Step 2: Edit your .env on VPS**
 
 ```bash
 nano .env
 ```
 
-### **Step 2: Add Location Configuration**
+### **Step 3: Configure for Subdomain Routing**
 
-Add these lines to your `.env` (after the DECODO_PASSWORD line):
-
+**Full example for Decodo subdomain routing:**
 ```env
-# Decodo Location - REQUIRED for CartPanda
-DECODO_COUNTRY=us
-DECODO_STATE=california
-DECODO_CITY=
-```
-
-**Full example:**
-```env
-# DECODO PROXY
+# DECODO PROXY (Subdomain-based - RECOMMENDED)
 USE_PROXY=true
-DECODO_SERVER=gate.decodo.com:7000
-DECODO_USERNAME=spgu0fnngj
-DECODO_PASSWORD=your-api-key-here
+DECODO_SERVER=us.decodo.com:10001
+DECODO_USERNAME=sp0ke1lihq
+DECODO_PASSWORD=3=xjnhaVODcli17Zk2
 
-# LOCATION (CRITICAL for CartPanda!)
-DECODO_COUNTRY=us
-DECODO_STATE=california
+# Leave these EMPTY for subdomain routing
+DECODO_COUNTRY=
+DECODO_STATE=
 DECODO_CITY=
 ```
 
-### **Step 3: Restart Services**
+**Why leave location fields empty?**
+- The subdomain `us.decodo.com` handles US routing automatically
+- Adding `-country-us` to the username causes 407 errors
+- System adds `-session-{id}` automatically for sticky sessions
+
+### **Step 4: Restart Services**
 
 ```bash
 pm2 restart all
 ```
 
-### **Step 4: Test**
+### **Step 5: Test CartPanda Checkout**
 
 ```bash
 curl -X POST http://localhost:3000/api/tasks/submit \
@@ -63,44 +71,89 @@ Watch logs: `tail -f logs/app.log`
 
 You should see:
 ```
-Using Decodo proxy: US/california - Session: test-us-proxy-123456789-abc
+Using Decodo proxy: US - Session: test-us-proxy-123456789-abc
+Navigating to https://rewards.mycartpanda.com/checkout/...
+Detected CartPanda checkout page
 ```
 
 ---
 
-## 🌍 Available Options
+## 🌍 Decodo Proxy Formats
 
-### **Country (Required)**
+### **Method 1: Subdomain Routing (RECOMMENDED)**
+
+**Use country-specific subdomains:**
+- `us.decodo.com:10001` = United States 🇺🇸
+- `br.decodo.com:10001` = Brazil 🇧🇷
+- `uk.decodo.com:10001` = United Kingdom 🇬🇧
+- `de.decodo.com:10001` = Germany 🇩🇪
+
+**Configuration:**
 ```env
+DECODO_SERVER=us.decodo.com:10001
+DECODO_USERNAME=your_username
+DECODO_PASSWORD=your_password
+DECODO_COUNTRY=
+DECODO_STATE=
+DECODO_CITY=
+```
+
+**Advantages:**
+- ✅ Simple - just change subdomain
+- ✅ No username formatting required
+- ✅ Works with port 10001
+- ✅ Clean proxy authentication
+
+---
+
+### **Method 2: Username-Suffix Format**
+
+**Use username suffixes for location:**
+
+**Configuration:**
+```env
+DECODO_SERVER=gate.decodo.com:7000
+DECODO_USERNAME=your_username
+DECODO_PASSWORD=your_password
 DECODO_COUNTRY=us
-```
-Always use `us` for CartPanda.
-
-### **State (Optional but Recommended)**
-
-Popular states:
-```env
-DECODO_STATE=california   # Los Angeles, San Francisco
-DECODO_STATE=newyork      # New York City
-DECODO_STATE=florida      # Miami, Orlando
-DECODO_STATE=texas        # Houston, Dallas
-DECODO_STATE=illinois     # Chicago
+DECODO_STATE=california
+DECODO_CITY=
 ```
 
-### **City (Optional - Very Specific)**
+**System builds username:** `your_username-country-us-state-california-session-{id}`
 
-```env
-DECODO_CITY=losangeles
-DECODO_CITY=miami
-DECODO_CITY=chicago
-DECODO_CITY=newyork
-```
+**Popular US states:**
+- `california` - Los Angeles, San Francisco
+- `newyork` - New York City
+- `florida` - Miami, Orlando
+- `texas` - Houston, Dallas
+- `illinois` - Chicago
+
+**Cities (very specific):**
+- `losangeles`, `miami`, `chicago`, `newyork`, `dallas`
 
 ---
 
 ## 🧪 Test Your Proxy Location
 
-Run this to verify you're getting a US IP:
+### **Test Subdomain Routing (Method 1):**
+
+```bash
+curl -U "your_username:your_password" \
+  -x "us.decodo.com:10001" \
+  "https://ip.decodo.com/json"
+```
+
+**Expected output:**
+```json
+{
+  "country": { "code": "US", "name": "United States" },
+  "city": { "name": "Grand Prairie", "state": "Texas" },
+  "proxy": { "ip": "108.207.109.26" }
+}
+```
+
+### **Test Username-Suffix Format (Method 2):**
 
 ```bash
 # Set your credentials

@@ -31,14 +31,16 @@ module.exports = {
   
   proxy: {
     enabled: process.env.USE_PROXY === 'true',
-    // Decodo configuration (port 7000 for residential proxies)
+    // Decodo configuration
+    // Use subdomain-based routing (e.g., us.decodo.com:10001) OR location suffix format
     decodServer: process.env.DECODO_SERVER || 'gate.decodo.com:7000',
     username: process.env.DECODO_USERNAME || '',
     password: process.env.DECODO_PASSWORD || '',
-    // Location targeting (important for geo-restricted sites like CartPanda)
-    country: process.env.DECODO_COUNTRY || 'us',
-    state: process.env.DECODO_STATE || '', // Optional: california, newyork, texas, etc.
-    city: process.env.DECODO_CITY || '', // Optional: losangeles, miami, etc.
+    // Location targeting (for username-suffix format only, not needed for subdomain routing)
+    // Leave empty if using subdomain routing like us.decodo.com
+    country: process.env.DECODO_COUNTRY || '',
+    state: process.env.DECODO_STATE || '',
+    city: process.env.DECODO_CITY || '',
   },
   
   form: {
