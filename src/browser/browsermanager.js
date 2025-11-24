@@ -63,7 +63,8 @@ class BrowserManager {
         
         proxyServer = `http://${config.proxy.decodServer}`;
         proxyUsername = `${config.proxy.username}${locationPart}-session-${accountId}`;
-        proxyPassword = config.proxy.password;
+        // URL-encode password to handle special characters like = : @ etc.
+        proxyPassword = encodeURIComponent(config.proxy.password);
         
         const location = config.proxy.state 
           ? `${config.proxy.country.toUpperCase()}/${config.proxy.state}` 
