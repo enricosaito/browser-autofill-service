@@ -31,8 +31,8 @@ nano .env
 # DECODO PROXY (Subdomain-based - RECOMMENDED)
 USE_PROXY=true
 DECODO_SERVER=us.decodo.com:10001
-DECODO_USERNAME=sp0ke1lihq
-DECODO_PASSWORD=3=xjnhaVODcli17Zk2
+DECODO_USERNAME=your_username
+DECODO_PASSWORD=your_password
 
 # Leave these EMPTY for subdomain routing
 DECODO_COUNTRY=
@@ -98,11 +98,16 @@ DECODO_STATE=
 DECODO_CITY=
 ```
 
+**How It Works:**
+- System detects `us.decodo.com` format
+- Uses **plain username** (no `-session-` or `-country-` suffixes)
+- Subdomain handles location routing automatically
+
 **Advantages:**
-- ✅ Simple - just change subdomain
-- ✅ No username formatting required
+- ✅ Simple - just change subdomain (us, br, uk, etc.)
+- ✅ Clean authentication - username exactly as-is
 - ✅ Works with port 10001
-- ✅ Clean proxy authentication
+- ✅ No 407 authentication errors
 
 ---
 

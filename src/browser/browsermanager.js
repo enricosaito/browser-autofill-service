@@ -45,32 +45,45 @@ class BrowserManager {
       let proxyPassword = null;
       
       if (config.proxy.enabled) {
-        // Build Decodo proxy username with location targeting and sticky session
-        // Format: username-country-{country}-state-{state}-city-{city}-session-{sessionId}
-        let locationPart = '';
-        
-        if (config.proxy.country) {
-          locationPart += `-country-${config.proxy.country}`;
-        }
-        
-        if (config.proxy.state) {
-          locationPart += `-state-${config.proxy.state}`;
-        }
-        
-        if (config.proxy.city) {
-          locationPart += `-city-${config.proxy.city}`;
-        }
-        
         proxyServer = `http://${config.proxy.decodServer}`;
-        proxyUsername = `${config.proxy.username}${locationPart}-session-${accountId}`;
         // URL-encode password to handle special characters like = : @ etc.
         proxyPassword = encodeURIComponent(config.proxy.password);
         
-        const location = config.proxy.state 
-          ? `${config.proxy.country.toUpperCase()}/${config.proxy.state}` 
-          : config.proxy.country.toUpperCase();
+        // Detect proxy format:
+        // - Subdomain routing: us.decodo.com, br.decodo.com (use plain username)
+        // - Username-suffix: gate.decodo.com (add location + session to username)
+        const isSubdomainRouting = /^[a-z]{2}\.decodo\.com/i.test(config.proxy.decodServer);
         
-        logger.info(`Using Decodo proxy: ${location} - Session: ${accountId}`);
+        if (isSubdomainRouting) {
+          // Subdomain routing: use plain username (no location/session suffix)
+          proxyUsername = config.proxy.username;
+          const subdomain = config.proxy.decodServer.split('.')[0].toUpperCase();
+          logger.info(`Using Decodo proxy: ${subdomain} subdomain - Session: ${accountId}`);
+        } else {
+          // Username-suffix format: add location + session to username
+          // Format: username-country-{country}-state-{state}-city-{city}-session-{sessionId}
+          let locationPart = '';
+          
+          if (config.proxy.country) {
+            locationPart += `-country-${config.proxy.country}`;
+          }
+          
+          if (config.proxy.state) {
+            locationPart += `-state-${config.proxy.state}`;
+          }
+          
+          if (config.proxy.city) {
+            locationPart += `-city-${config.proxy.city}`;
+          }
+          
+          proxyUsername = `${config.proxy.username}${locationPart}-session-${accountId}`;
+          
+          const location = config.proxy.state 
+            ? `${config.proxy.country.toUpperCase()}/${config.proxy.state}` 
+            : config.proxy.country.toUpperCase();
+          
+          logger.info(`Using Decodo proxy: ${location} - Session: ${accountId}`);
+        }
       }
       
       // Browser launch args

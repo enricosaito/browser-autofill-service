@@ -47,23 +47,25 @@ BROWSER_TIMEOUT=60000
 # Decodo Proxy (CRITICAL for CartPanda - requires US IPs!)
 USE_PROXY=true
 
-# OPTION 1: Subdomain-based routing (RECOMMENDED for Decodo)
-# Use country-specific subdomain: us.decodo.com, br.decodo.com, uk.decodo.com, etc.
+# OPTION 1: Subdomain Routing (RECOMMENDED - Decodo residential proxies)
+# System auto-detects subdomain format and uses plain username (no suffixes)
 DECODO_SERVER=us.decodo.com:10001
 DECODO_USERNAME=your_username
 DECODO_PASSWORD=your_password
-# Leave these EMPTY when using subdomain routing:
 DECODO_COUNTRY=
 DECODO_STATE=
 DECODO_CITY=
 
-# OPTION 2: Username-suffix format (if your provider uses gate.decodo.com:7000)
+# Other subdomains: br.decodo.com, uk.decodo.com, de.decodo.com, etc.
+
+# OPTION 2: Username-Suffix Format (gate.decodo.com with location in username)
+# System auto-adds: username-country-us-state-texas-session-{id}
 # DECODO_SERVER=gate.decodo.com:7000
 # DECODO_USERNAME=your_username
 # DECODO_PASSWORD=your_password
 # DECODO_COUNTRY=us
 # DECODO_STATE=texas
-# DECODO_CITY=dallas
+# DECODO_CITY=
 
 # CartPanda
 TARGET_URL=https://checkout.cartpanda.com/your-url
