@@ -46,8 +46,8 @@ class BrowserManager {
       
       if (config.proxy.enabled) {
         proxyServer = `http://${config.proxy.decodServer}`;
-        // URL-encode password to handle special characters like = : @ etc.
-        proxyPassword = encodeURIComponent(config.proxy.password);
+        // Use raw password for httpCredentials (no encoding needed)
+        proxyPassword = config.proxy.password;
         
         // Detect proxy format:
         // - Subdomain routing: us.decodo.com, br.decodo.com (use plain username)
