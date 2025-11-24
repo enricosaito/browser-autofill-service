@@ -24,10 +24,15 @@ class CartPandaCheckout {
       ];
       
       const pageText = await page.textContent('body').catch(() => '');
+      const pageTitle = await page.title().catch(() => '');
+      
+      // Log first 500 chars of page for debugging
+      logger.info(`Page title: "${pageTitle}"`);
+      logger.info(`Page text preview: "${pageText.substring(0, 500)}..."`);
       
       for (const msg of blockMessages) {
-        if (pageText.includes(msg)) {
-          logger.warn(`Page blocked detected: "${msg}"`);
+        if (pageText.toLowerCase().includes(msg.toLowerCase())) {
+          logger.warn(`Page blocked detected: "${msg}" found in page text`);
           return true;
         }
       }
