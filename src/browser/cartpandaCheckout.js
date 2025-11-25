@@ -1,5 +1,5 @@
 const logger = require('../utils/logger');
-const { sleep, typeHumanLike, smoothScrollTo } = require('../utils/humanBehavior');
+const { sleep, humanType, humanScroll } = require('../utils/humanBehavior');
 
 /**
  * CartPanda Checkout Handler
@@ -127,7 +127,7 @@ class CartPandaCheckout {
       await sleep(1000);
       
       // Scroll to payment section
-      await smoothScrollTo(page, 200);
+      await humanScroll(page, 'down', 200);
       await sleep(500);
       
       // === SECTION 2: Payment Information ===
@@ -168,7 +168,7 @@ class CartPandaCheckout {
       await sleep(500);
       
       // Scroll to submit button
-      await smoothScrollTo(page, 700);
+      await humanScroll(page, 'down', 700);
       await sleep(1000);
       
       logger.info(`Form filling completed. Filled ${results.filled.length} fields`);
@@ -203,7 +203,7 @@ class CartPandaCheckout {
       await sleep(200);
       
       // Type with human-like behavior
-      await typeHumanLike(page, selector, value);
+      await humanType(page, selector, value);
       
       logger.debug(`Successfully filled ${fieldName}`);
     } catch (error) {
