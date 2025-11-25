@@ -16,27 +16,54 @@ class CartPandaCheckout {
     try {
       logger.info('Checking for block/CAPTCHA...');
       
-      const blockMessages = [
+      // More specific block phrases (not just single words)
+      const blockPhrases = [
         'Sorry, you have been blocked',
+        'You have been blocked',
         'Access Denied',
-        'Blocked',
-        'captcha',
+        'Access to this page has been denied',
+        'Please verify you are a human',
+        'Checking your browser',
       ];
       
-      const pageText = await page.textContent('body').catch(() => '');
+      // Get visible text content only (not all HTML/JS)
+      const visibleText = await page.evaluate(() => {
+        return document.body.innerText || document.body.textContent || '';
+      }).catch(() => '');
+      
       const pageTitle = await page.title().catch(() => '');
       
-      // Log first 500 chars of page for debugging
+      // Log page info for debugging
       logger.info(`Page title: "${pageTitle}"`);
-      logger.info(`Page text preview: "${pageText.substring(0, 500)}..."`);
+      logger.info(`Visible text preview: "${visibleText.substring(0, 300).replace(/\n/g, ' ')}..."`);
       
-      for (const msg of blockMessages) {
-        if (pageText.toLowerCase().includes(msg.toLowerCase())) {
-          logger.warn(`Page blocked detected: "${msg}" found in page text`);
+      // Check for block phrases in visible text
+      const lowerText = visibleText.toLowerCase();
+      for (const phrase of blockPhrases) {
+        if (lowerText.includes(phrase.toLowerCase())) {
+          logger.warn(`❌ Block detected: "${phrase}" found in visible text`);
           return true;
         }
       }
       
+      // Check for common CAPTCHA indicators
+      const captchaSelectors = [
+        'iframe[src*="captcha"]',
+        'iframe[src*="recaptcha"]',
+        '#captcha',
+        '.captcha',
+        '[class*="cf-challenge"]', // Cloudflare
+      ];
+      
+      for (const selector of captchaSelectors) {
+        const hasCaptcha = await page.$(selector).then(el => !!el).catch(() => false);
+        if (hasCaptcha) {
+          logger.warn(`❌ CAPTCHA detected: ${selector}`);
+          return true;
+        }
+      }
+      
+      logger.info('✅ No blocks or CAPTCHAs detected');
       return false;
     } catch (error) {
       logger.warn('Error checking block status:', error.message);
